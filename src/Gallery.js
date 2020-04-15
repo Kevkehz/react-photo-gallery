@@ -6,6 +6,8 @@ import { computeColumnLayout } from './layouts/columns';
 import { computeRowLayout } from './layouts/justified';
 import { findIdealNodeSearch } from './utils/findIdealNodeSearch';
 
+const useIsomorphicLayoutEffect = typeof window !== undefined ? useLayoutEffect : useEffect;
+
 const Gallery = React.memo(function Gallery({
   photos,
   onClick,
@@ -15,11 +17,12 @@ const Gallery = React.memo(function Gallery({
   targetRowHeight,
   columns,
   renderImage,
+  initialContainerWidth,
 }) {
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(initialContainerWidth);
   const galleryEl = useRef(null);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     let animationFrameID = null;
     const observer = new ResizeObserver(entries => {
       // only do something if width changes
@@ -66,12 +69,25 @@ const Gallery = React.memo(function Gallery({
     if (limitNodeSearch === undefined) {
       limitNodeSearch = 2;
       if (containerWidth >= 450) {
-        limitNodeSearch = findIdealNodeSearch({ containerWidth, targetRowHeight });
+        limitNodeSearch = findIdealNodeSearch({
+          containerWidth,
+          targetRowHeight,
+        });
       }
     }
 
-    galleryStyle = { display: 'flex', flexWrap: 'wrap', flexDirection: 'row' };
-    thumbs = computeRowLayout({ containerWidth: width, limitNodeSearch, targetRowHeight, margin, photos });
+    galleryStyle = {
+      display: 'flex',
+      flexWrap: 'wrap',
+      flexDirection: 'row',
+    };
+    thumbs = computeRowLayout({
+      containerWidth: width,
+      limitNodeSearch,
+      targetRowHeight,
+      margin,
+      photos,
+    });
   }
   if (direction === 'column') {
     // allow user to calculate columns from containerWidth
@@ -86,7 +102,12 @@ const Gallery = React.memo(function Gallery({
       if (containerWidth >= 1500) columns = 4;
     }
     galleryStyle = { position: 'relative' };
-    thumbs = computeColumnLayout({ containerWidth: width, columns, margin, photos });
+    thumbs = computeColumnLayout({
+      containerWidth: width,
+      columns,
+      margin,
+      photos,
+    });
     galleryStyle.height = thumbs[thumbs.length - 1].containerHeight;
   }
 
@@ -122,12 +143,14 @@ Gallery.propTypes = {
   limitNodeSearch: PropTypes.oneOfType([PropTypes.func, PropTypes.number]),
   margin: PropTypes.number,
   renderImage: PropTypes.func,
+  initialContainerWidth: PropTypes.number,
 };
 
 Gallery.defaultProps = {
   margin: 2,
   direction: 'row',
   targetRowHeight: 300,
+  initialContainerWidth: 0,
 };
 export { Photo };
 export default Gallery;
